@@ -75,7 +75,7 @@ function makeTagComment(buffer, done) {
     //console.log('body:', JSON.stringify(body, null, 2));
     var tag = probable.pickFromArray(body.responses[0].labelAnnotations)
       .description;
-    done(null, { comment: `tag ur self I'm a ${tag}`, tag, buffer });
+    done(null, { comment: `tag ur self I'm the ${tag}`, tag, buffer });
   }
 }
 

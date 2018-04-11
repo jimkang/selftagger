@@ -1,11 +1,8 @@
-/* global process */
-
 var config = require('./config');
 // var config = require('./test-config');
 
 var Twit = require('twit');
 var waterfall = require('async-waterfall');
-var fs = require('fs');
 var queue = require('d3-queue').queue;
 var randomId = require('idmaker').randomId;
 var StaticWebArchiveOnGit = require('static-web-archive-on-git');
@@ -33,13 +30,7 @@ var staticWebStream = StaticWebArchiveOnGit({
   maxEntriesPerPage: 20
 });
 
-var dryRun = false;
-
-if (process.argv.length > 2) {
-  dryRun = process.argv.indexOf('--dry') !== -1;
-}
-
-//var twit = new Twit(config.twitter);
+var twit = new Twit(config.twitter);
 
 waterfall([obtainImage, makeTagComment, postToTargets], wrapUp);
 
@@ -108,36 +99,21 @@ function createPostBody(base64encodedImage) {
 
 function postToTargets({ comment, tag, buffer }, done) {
   var q = queue();
-  //q.defer(postLinkFindingImage, linkResult);
   q.defer(postToArchive, { comment, tag, buffer });
+  q.defer(postToTwitter, { comment, tag, buffer });
   q.await(done);
 }
 
-/*
-function postLinkFindingImage(linkResult, done) {
+function postToTwitter({comment, tag, buffer}, done) {
   var postImageOpts = {
     twit,
-    dryRun,
-    base64Image: linkResult.base64Image,
-    altText: linkResult.concept
-    //    caption: dooDooDooDoo()
+    base64Image: buffer.toString('base64'),
+    altText: tag,
+    caption: comment
   };
 
-  if (dryRun) {
-    const filename =
-      'would-have-posted-' +
-      new Date().toISOString().replace(/:/g, '-') +
-      '.png';
-    console.log('Writing out', filename);
-    fs.writeFileSync(filename, postImageOpts.base64Image, {
-      encoding: 'base64'
-    });
-    process.exit();
-  } else {
-    postImage(postImageOpts, done);
-  }
+  postImage(postImageOpts, done);
 }
-*/
 
 function postToArchive({ comment, tag, buffer }, done) {
   var id = tag.replace(/ /g, '-') + randomId(8);

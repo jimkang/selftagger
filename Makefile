@@ -1,6 +1,6 @@
 include config.mk
 
-PROJECTNAME = selftagger 
+PROJECTNAME = selftagger
 HOMEDIR = $(shell pwd)
 APPDIR = /opt/$(PROJECTNAME)
 

@@ -1,0 +1,32 @@
+{
+  "name": "selftagger",
+  "version": "1.0.0",
+  "description": "A self-tagging bot.",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:jimkang/selftagger.git"
+  },
+  "keywords": [],
+  "author": "Jim Kang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jimkang/selftagger/issues"
+  },
+  "homepage": "https://github.com/jimkang/selftagger",
+  "devDependencies": {},
+  "dependencies": {
+    "async-waterfall": "^0.1.5",
+    "d3-queue": "^3.0.7",
+    "idmaker": "^0.1.1",
+    "post-image-to-twitter": "^1.0.0",
+    "probable": "^2.1.1",
+    "request": "^2.85.0",
+    "standard-bail": "^2.0.1",
+    "static-web-archive-on-git": "^2.0.1",
+    "twit": "^2.2.9"
+  }
+}

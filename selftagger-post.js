@@ -10,6 +10,7 @@ var request = require('request');
 var sb = require('standard-bail')();
 var postImage = require('post-image-to-twitter');
 var probable = require('probable');
+var callNextTick = require('call-next-tick');
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;
 const apiURL =
@@ -31,8 +32,14 @@ var staticWebStream = StaticWebArchiveOnGit({
 });
 
 var twit = new Twit(config.twitter);
+const maxTries = 5;
+var tryCount = 0;
 
-waterfall([obtainImage, makeTagComment, postToTargets], wrapUp);
+function attemptAPost() {
+  waterfall([obtainImage, makeTagComment, postToTargets], wrapUp);
+}
+
+attemptAPost();
 
 function obtainImage(done) {
   var reqOpts = {
@@ -43,8 +50,8 @@ function obtainImage(done) {
 
   function getImageFromPage(res, body) {
     var result = imgLinkRegex.exec(body);
-    if (result.length < 1) {
-      done(new Error('Could not find image link.'));
+    if (result && result.length < 1) {
+      done(new Error(`Could not find image link for ${res.url}.`));
     } else {
       var imgLink = result[1];
       var imgReqOpts = {
@@ -104,7 +111,7 @@ function postToTargets({ comment, tag, buffer }, done) {
   q.await(done);
 }
 
-function postToTwitter({comment, tag, buffer}, done) {
+function postToTwitter({ comment, tag, buffer }, done) {
   var postImageOpts = {
     twit,
     base64Image: buffer.toString('base64'),
@@ -128,14 +135,20 @@ function postToArchive({ comment, tag, buffer }, done) {
 }
 
 function wrapUp(error, data) {
+  tryCount += 1;
+
   if (error) {
     console.log(error, error.stack);
 
     if (data) {
       console.log('data:', data);
     }
+
+    if (tryCount < maxTries) {
+      console.log(`Have tried ${tryCount} times. Retrying!`);
+      callNextTick(attemptAPost);
+    }
   } else {
-    // Technically, the user wasn't replied to, but good enough.
-    // lastTurnRecord.recordTurn(callOutId, new Date(), reportRecording);
+    console.log('Completed successfully.');
   }
 }

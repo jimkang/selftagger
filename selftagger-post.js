@@ -50,7 +50,7 @@ function obtainImage(done) {
 
   function getImageFromPage(res, body) {
     var result = imgLinkRegex.exec(body);
-    if (result && result.length < 1) {
+    if (!result || result.length < 1) {
       done(new Error(`Could not find image link for ${res.url}.`));
     } else {
       var imgLink = result[1];

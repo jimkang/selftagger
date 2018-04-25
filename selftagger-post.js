@@ -11,6 +11,7 @@ var sb = require('standard-bail')();
 var postImage = require('post-image-to-twitter');
 var probable = require('probable');
 var callNextTick = require('call-next-tick');
+var pluck = require('lodash.pluck');
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;
 const apiURL =
@@ -80,8 +81,8 @@ function makeTagComment(buffer, done) {
 
   function makeTagWithLabel(response, body) {
     //console.log('body:', JSON.stringify(body, null, 2));
-    var tag = probable.pickFromArray(body.responses[0].labelAnnotations)
-      .description;
+    var tags = pluck(body.responses[0].labelAnnotations, 'description');
+    var tag = probable.pickFromArray(tags.filter(tagIsAllowed));
     done(null, { comment: `tag ur self I'm the ${tag}`, tag, buffer });
   }
 }
@@ -152,3 +153,8 @@ function wrapUp(error, data) {
     console.log('Completed successfully.');
   }
 }
+
+function tagIsAllowed(tag) {
+  return tag !== 'font';
+}
+

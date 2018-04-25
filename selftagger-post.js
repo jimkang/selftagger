@@ -1,3 +1,5 @@
+/* global process, __dirname */
+
 var config = require('./config');
 // var config = require('./test-config');
 
@@ -12,6 +14,21 @@ var postImage = require('post-image-to-twitter');
 var probable = require('probable');
 var callNextTick = require('call-next-tick');
 var pluck = require('lodash.pluck');
+var fs = require('fs');
+var iscool = require('iscool')();
+
+var dryRun = process.argv.length > 2 ? process.argv[2] === '--dry' : false;
+
+var tagsToAvoid = [
+  'font',
+  'black and white',
+  'ancient history',
+  'history',
+  'historic site',
+  'monochrome',
+  'monochrome photography',
+  'still life photography'
+];
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;
 const apiURL =
@@ -77,13 +94,37 @@ function makeTagComment(buffer, done) {
     json: true,
     body: createPostBody(buffer.toString('base64'))
   };
-  request(requestOpts, sb(makeTagWithLabel, done));
+  request(requestOpts, sb(makeTagWithFeatures, done));
 
-  function makeTagWithLabel(response, body) {
-    //console.log('body:', JSON.stringify(body, null, 2));
-    var tags = pluck(body.responses[0].labelAnnotations, 'description');
-    var tag = probable.pickFromArray(tags.filter(tagIsAllowed));
-    done(null, { comment: `tag ur self I'm the ${tag}`, tag, buffer });
+  function makeTagWithFeatures(res, body) {
+    // console.log('body:', JSON.stringify(body, null, 2));
+    var tags;
+    var response = body.responses[0];
+    var labels = pluck(response.labelAnnotations, 'description');
+    var landmarks = pluck(response.landmarkAnnotations, 'description');
+    var texts = pluck(response.textAnnotations, 'description');
+    var quoteTheTag = false;
+    if (texts.length > 1) {
+      tags = texts;
+      console.log('text tags:', tags);
+      quoteTheTag = true;
+    } else if (landmarks.length > 0) {
+      tags = landmarks;
+    } else {
+      tags = labels;
+    }
+    var tag = probable.pickFromArray(tags.filter(tagIsAllowed).filter(iscool));
+    if (!tag) {
+      done(new Error('Could not find suitable tags.'));
+      return;
+    }
+    var comment;
+    if (quoteTheTag) {
+      comment = `tag ur self I'm "${tag}"`;
+    } else {
+      comment = `tag ur self I'm the ${tag}`;
+    }
+    done(null, { comment, tag, buffer });
   }
 }
 
@@ -98,6 +139,14 @@ function createPostBody(base64encodedImage) {
           {
             type: 'LABEL_DETECTION',
             maxResults: 100
+          },
+          {
+            type: 'LANDMARK_DETECTION',
+            maxResults: 5
+          },
+          {
+            type: 'TEXT_DETECTION',
+            maxResults: 10
           }
         ]
       }
@@ -106,10 +155,18 @@ function createPostBody(base64encodedImage) {
 }
 
 function postToTargets({ comment, tag, buffer }, done) {
-  var q = queue();
-  q.defer(postToArchive, { comment, tag, buffer });
-  q.defer(postToTwitter, { comment, tag, buffer });
-  q.await(done);
+  if (dryRun) {
+    console.log('Would have posted:', comment);
+    var filename = __dirname + '/scratch/' + tag + '.jpg';
+    fs.writeFileSync(filename, buffer);
+    console.log('Wrote', filename);
+    callNextTick(done);
+  } else {
+    var q = queue();
+    q.defer(postToArchive, { comment, tag, buffer });
+    q.defer(postToTwitter, { comment, tag, buffer });
+    q.await(done);
+  }
 }
 
 function postToTwitter({ comment, tag, buffer }, done) {
@@ -155,6 +212,5 @@ function wrapUp(error, data) {
 }
 
 function tagIsAllowed(tag) {
-  return tag !== 'font';
+  return tagsToAvoid.indexOf(tag) === -1;
 }
-

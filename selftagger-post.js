@@ -27,7 +27,8 @@ var tagsToAvoid = [
   'historic site',
   'monochrome',
   'monochrome photography',
-  'still life photography'
+  'still life photography',
+  'photography'
 ];
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;

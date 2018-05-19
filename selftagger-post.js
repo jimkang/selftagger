@@ -105,7 +105,7 @@ function makeTagComment(buffer, done) {
     var landmarks = pluck(response.landmarkAnnotations, 'description');
     var texts = pluck(response.textAnnotations, 'description');
     var quoteTheTag = false;
-    if (texts.length > 1) {
+    if (texts.length > 1 && probable.roll(2) === 0) {
       tags = texts;
       console.log('text tags:', tags);
       quoteTheTag = true;

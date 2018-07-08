@@ -28,7 +28,14 @@ var tagsToAvoid = [
   'monochrome',
   'monochrome photography',
   'still life photography',
-  'photography'
+  'photography',
+  'aerial photography',
+  'close up',
+  'painting',
+  'architecture',
+  'mixed use',
+  'residential area',
+  'text'
 ];
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;

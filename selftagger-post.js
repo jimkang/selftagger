@@ -1,21 +1,16 @@
 /* global process, __dirname */
 
 var config = require('./config');
-// var config = require('./test-config');
-
-var Twit = require('twit');
-var waterfall = require('async-waterfall');
-var queue = require('d3-queue').queue;
-var randomId = require('idmaker').randomId;
-var StaticWebArchiveOnGit = require('static-web-archive-on-git');
 var request = require('request');
-var sb = require('standard-bail')();
-var postImage = require('post-image-to-twitter');
+var postIt = require('@jimkang/post-it');
+var waterfall = require('async-waterfall');
+var randomId = require('idmaker').randomId;
 var probable = require('probable');
 var callNextTick = require('call-next-tick');
 var pluck = require('lodash.pluck');
 var fs = require('fs');
 var iscool = require('iscool')();
+var sb = require('standard-bail')();
 
 var dryRun = process.argv.length > 2 ? process.argv[2] === '--dry' : false;
 
@@ -38,26 +33,11 @@ var tagsToAvoid = [
   'text'
 ];
 
-const imgLinkRegex = /Size of this preview: <a href="([^"]+)\"(\s)/;
+const imgLinkRegex = /Size of this preview: <a href="([^"]+)"(\s)/;
 const apiURL =
   'https://vision.googleapis.com/v1/images:annotate?key=' +
   config.googleVisionAPIKey;
 
-var staticWebStream = StaticWebArchiveOnGit({
-  config: config.github,
-  title: 'Self-tagging bot archives',
-  footerScript: `<script type="text/javascript">
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-  ga('create', 'UA-49491163-1', 'jimkang.com');
-  ga('send', 'pageview');
-</script>`,
-  maxEntriesPerPage: 20
-});
-
-var twit = new Twit(config.twitter);
 const maxTries = 5;
 var tryCount = 0;
 
@@ -170,34 +150,24 @@ function postToTargets({ comment, tag, buffer }, done) {
     console.log('Wrote', filename);
     callNextTick(done);
   } else {
-    var q = queue();
-    q.defer(postToArchive, { comment, tag, buffer });
-    q.defer(postToTwitter, { comment, tag, buffer });
-    q.await(done);
+    const id = 'tagurself-' + randomId(8);
+    postIt(
+      {
+        id,
+        text: comment,
+        altText: 'Picture in which one may tag oneself',
+        mediaFilename: id + '.jpg',
+        buffer,
+        targets: [
+          {
+            type: 'noteTaker',
+            config: config.noteTaker
+          }
+        ]
+      },
+      done
+    );
   }
-}
-
-function postToTwitter({ comment, tag, buffer }, done) {
-  var postImageOpts = {
-    twit,
-    base64Image: buffer.toString('base64'),
-    altText: tag,
-    caption: comment
-  };
-
-  postImage(postImageOpts, done);
-}
-
-function postToArchive({ comment, tag, buffer }, done) {
-  var id = tag.replace(/ /g, '-') + randomId(8);
-  staticWebStream.write({
-    id,
-    date: new Date().toISOString(),
-    mediaFilename: id + '.jpg',
-    caption: comment,
-    buffer
-  });
-  staticWebStream.end(done);
 }
 
 function wrapUp(error, data) {
@@ -220,5 +190,5 @@ function wrapUp(error, data) {
 }
 
 function tagIsAllowed(tag) {
-  return tagsToAvoid.indexOf(tag) === -1;
+  return tag.length > 1 && tagsToAvoid.indexOf(tag) === -1;
 }

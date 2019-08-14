@@ -19,6 +19,7 @@
   "homepage": "https://github.com/jimkang/selftagger",
   "devDependencies": {},
   "dependencies": {
+    "@jimkang/post-it": "^1.1.1",
     "async-waterfall": "^0.1.5",
     "call-next-tick": "^2.0.1",
     "d3-queue": "^3.0.7",
@@ -27,9 +28,7 @@
     "lodash.pluck": "^3.1.2",
     "post-image-to-twitter": "^1.0.0",
     "probable": "^2.1.1",
-    "request": "^2.85.0",
-    "standard-bail": "^2.0.1",
-    "static-web-archive-on-git": "^2.0.1",
-    "twit": "^2.2.9"
+    "request": "^2.88.0",
+    "standard-bail": "^2.0.1"
   }
 }

@@ -30,7 +30,7 @@ var tagsToAvoid = [
   'architecture',
   'mixed use',
   'residential area',
-  'text'
+  'text',
 ];
 
 const imgLinkRegex = /Size of this preview: <a href="([^"]+)"(\s)/;
@@ -50,7 +50,7 @@ attemptAPost();
 function obtainImage(done) {
   var reqOpts = {
     method: 'GET',
-    url: 'http://commons.wikimedia.org/wiki/Special:Random/File'
+    url: 'https://commons.wikimedia.org/wiki/Special:Random/File',
   };
   request(reqOpts, sb(getImageFromPage, done));
 
@@ -63,7 +63,7 @@ function obtainImage(done) {
       var imgReqOpts = {
         method: 'GET',
         url: imgLink,
-        encoding: null
+        encoding: null,
       };
       //console.log('imgLink', imgLink);
       request(imgReqOpts, sb(passBuffer, done));
@@ -71,6 +71,12 @@ function obtainImage(done) {
   }
 
   function passBuffer(res, buffer) {
+    if (res.statusCode < 200 || res.statusCode > 299) {
+      done(
+        new Error(`Got status ${res.statusCode} while trying to get image.`)
+      );
+      return;
+    }
     done(null, buffer);
   }
 }
@@ -80,7 +86,7 @@ function makeTagComment(buffer, done) {
     url: apiURL,
     method: 'POST',
     json: true,
-    body: createPostBody(buffer.toString('base64'))
+    body: createPostBody(buffer.toString('base64')),
   };
   request(requestOpts, sb(makeTagWithFeatures, done));
 
@@ -121,24 +127,24 @@ function createPostBody(base64encodedImage) {
     requests: [
       {
         image: {
-          content: base64encodedImage
+          content: base64encodedImage,
         },
         features: [
           {
             type: 'LABEL_DETECTION',
-            maxResults: 100
+            maxResults: 100,
           },
           {
             type: 'LANDMARK_DETECTION',
-            maxResults: 5
+            maxResults: 5,
           },
           {
             type: 'TEXT_DETECTION',
-            maxResults: 10
-          }
-        ]
-      }
-    ]
+            maxResults: 10,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -161,9 +167,9 @@ function postToTargets({ comment, tag, buffer }, done) {
         targets: [
           {
             type: 'noteTaker',
-            config: config.noteTaker
-          }
-        ]
+            config: config.noteTaker,
+          },
+        ],
       },
       done
     );
